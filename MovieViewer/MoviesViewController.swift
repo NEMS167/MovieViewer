@@ -8,16 +8,56 @@
 
 import UIKit
 import AFNetworking
+import MBProgressHUD
 class MoviesViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
     @IBOutlet weak var TableView: UITableView!
     var movies: [NSDictionary]?
+    
+    func loadDataFromNetwork() {
+        
+        // ... Create the NSURLRequest (myRequest) ...
+        
+        // Configure session so that completion handler is executed on main UI thread
+        
+        let apiKey = "a07e22bc18f5cb106bfe4cc1f83ad8ed"
+        let url = NSURL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")
+        let myRequest = NSURLRequest(
+            URL: url!,
+            cachePolicy: NSURLRequestCachePolicy.ReloadIgnoringLocalCacheData,
+            timeoutInterval: 10)
+        
+        let session = NSURLSession(
+            configuration: NSURLSessionConfiguration.defaultSessionConfiguration(),
+            delegate:nil,
+            delegateQueue:NSOperationQueue.mainQueue()
+        )
+        
+        // Display HUD right before the request is made
+        MBProgressHUD.showHUDAddedTo(self.view, animated: true)
+        
+        let task : NSURLSessionDataTask = session.dataTaskWithRequest(myRequest,
+            completionHandler: { (data, response, error) in
+                
+                // Hide HUD once the network request comes back (must be done on main UI thread)
+                MBProgressHUD.hideHUDForView(self.view, animated: true)
+                
+                // ... Remainder of response handling code ...
+                
+        });
+        task.resume()
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         TableView.dataSource = self
         TableView.delegate = self
+        
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: "refresh:", forControlEvents: .ValueChanged)
+        TableView.addSubview(refreshControl)
+        
         
         let apiKey = "a07e22bc18f5cb106bfe4cc1f83ad8ed"
         let url = NSURL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=\(apiKey)")
@@ -82,6 +122,11 @@ class MoviesViewController: UIViewController, UITableViewDataSource, UITableView
       
         print("row \(indexPath.row)")
         return cell
+    }
+    
+    func refresh(refreshControl: UIRefreshControl) {
+    self.loadDataFromNetwork()
+    refreshControl.endRefreshing()
     }
     /*
     // MARK: - Navigation
